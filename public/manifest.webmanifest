@@ -1,7 +1,7 @@
 {
   "name": "SKP Viewer",
   "short_name": "SKP Viewer",
-  "description": "A phone viewer for SketchUp (.skp) files.",
+  "description": "A viewer for SketchUp (.skp) files.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -8,15 +8,17 @@
 
   <!-- Add to Home Screen. iPhones and iPads still read the apple-* tags rather
        than the manifest for the icon and the full-screen behaviour, so both
-       sets are here. -->
+       sets are here. black-translucent is safe because the stylesheet already
+       allows for safe-area-inset. -->
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="apple-touch-icon" href="./icon-192.png" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="SKP Viewer" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="description" content="A phone viewer for SketchUp (.skp) files." />
-
+  <meta name="description" content="A viewer for SketchUp (.skp) files, for iPhone and iPad." />
+
+  <link rel="stylesheet" href="./src/style.css" />
   <script>
     // Show startup errors on screen instead of failing silently.
     window.addEventListener('error', function (e) {
@@ -25,8 +27,6 @@
       b.textContent = 'Error: ' + (e.message || e.error || 'unknown');
     });
   </script>
-  <script type="module" crossorigin src="./assets/index-BbPjttoR.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-FnrhdIzD.css">
 </head>
 <body>
   <!-- Library (home) -->
@@ -37,7 +37,8 @@
     </header>
     <div id="libEmpty" class="empty">
       <p>No models yet.</p>
-      <p class="muted">Tap <b>Open file</b>, then pick a .skp from your phone. On Android use the ☰ menu in the picker to reach Downloads or Google Drive; on iPhone choose <b>Browse</b> for iCloud Drive, Google Drive and anywhere else your files live.</p>
+      <p class="muted">Tap <b>Open file</b>, then choose <b>Browse</b> to pick a .skp from iCloud Drive, Google Drive, Dropbox, or anywhere else your files are.</p>
+      <p class="muted"><small>Add this to your home screen — tap <b>Share</b>, then <b>Add to Home Screen</b> — and it opens full screen and works without a signal.</small></p>
     </div>
     <div id="libGrid" class="grid"></div>
     <input id="fileInput" type="file" multiple class="vh" />
@@ -81,6 +82,7 @@
       <div id="loadingText">Loading…</div>
     </div>
   </section>
-
+
+  <script type="module" src="./src/main.js"></script>
 </body>
 </html>
