@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#1f2a33" />
+  <title>SKP Viewer</title>
+
+  <!-- Add to Home Screen. iPhones and iPads still read the apple-* tags rather
+       than the manifest for the icon and the full-screen behaviour, so both
+       sets are here. -->
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="SKP Viewer" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="A phone viewer for SketchUp (.skp) files." />
+
+  <script>
+    // Show startup errors on screen instead of failing silently.
+    window.addEventListener('error', function (e) {
+      var b = document.getElementById('fatal');
+      if (!b) { b = document.createElement('div'); b.id = 'fatal'; document.body && document.body.appendChild(b); }
+      b.textContent = 'Error: ' + (e.message || e.error || 'unknown');
+    });
+  </script>
+  <script type="module" crossorigin src="./assets/index-BbPjttoR.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-FnrhdIzD.css">
+</head>
+<body>
+  <!-- Library (home) -->
+  <section id="library" class="screen">
+    <header class="bar">
+      <div class="brand">SKP Viewer</div>
+      <label for="fileInput" id="btnOpen" class="primary" role="button">Open file</label>
+    </header>
+    <div id="libEmpty" class="empty">
+      <p>No models yet.</p>
+      <p class="muted">Tap <b>Open file</b>, then pick a .skp from your phone storage, Downloads, or Google Drive (use the ☰ menu in the picker to switch to Drive).</p>
+    </div>
+    <div id="libGrid" class="grid"></div>
+    <input id="fileInput" type="file" multiple class="vh" />
+  </section>
+
+  <!-- Viewer -->
+  <section id="viewer" class="screen hidden">
+    <canvas id="c"></canvas>
+    <header class="bar overlay">
+      <button id="btnBack" class="icon" aria-label="Back">
+        <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <div id="title" class="title"></div>
+      <button id="btnInfo" class="icon" aria-label="Model info">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>
+      </button>
+    </header>
+
+    <div id="measureHud" class="hud hidden"></div>
+    <div id="toast" class="toast hidden"></div>
+    <div id="joystick" class="joystick hidden"><div class="knob"></div></div>
+
+    <div id="scenes" class="scenes hidden"></div>
+
+    <nav id="toolbar" class="toolbar">
+      <button data-panel="views"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg><span>Views</span></button>
+      <button data-panel="style"><svg viewBox="0 0 24 24"><path d="M4 18L14 8l2 2L6 20H4z"/><path d="M14 8l3-3 2 2-3 3"/></svg><span>Style</span></button>
+      <button data-panel="tags"><svg viewBox="0 0 24 24"><path d="M3 12l9-9h8v8l-9 9z"/><circle cx="16" cy="8" r="1.5"/></svg><span>Tags</span></button>
+      <button data-panel="outliner"><svg viewBox="0 0 24 24"><path d="M4 5h6M8 10h8M8 15h8M4 20h6M6 5v10"/></svg><span>Outliner</span></button>
+      <button id="btnMeasure"><svg viewBox="0 0 24 24"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg><span>Measure</span></button>
+      <button id="btnFit"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><span>Fit</span></button>
+    </nav>
+
+    <div id="sheet" class="sheet hidden">
+      <div class="sheet-head"><div id="sheetTitle"></div><button id="sheetClose" class="icon" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+      <div id="sheetBody" class="sheet-body"></div>
+    </div>
+
+    <div id="loading" class="loading hidden">
+      <div class="spinner"></div>
+      <div id="loadingText">Loading…</div>
+    </div>
+  </section>
+
+</body>
+</html>
