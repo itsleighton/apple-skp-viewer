@@ -2622,11 +2622,13 @@ var Archive = class {
   constructor(data, ver) {
     this.slots = /* @__PURE__ */ new Map();
     this.classSlot = /* @__PURE__ */ new Map();
+    this.firstClassSlot = /* @__PURE__ */ new Map();
     this.classSchema = /* @__PURE__ */ new Map();
     this.currentClass = null;
     this.currentObjSlot = null;
     this.nextSlot = 0;
     this.walkBase = 0;
+    this.seenLineStyle = false;
     this.readers = {};
     this.currentLoop = null;
     this.inEntityList = false;
@@ -2689,6 +2691,7 @@ var Archive = class {
       const name = new TextDecoder("utf-8").decode(nameBytes);
       this.alloc(["class", name, schema]);
       this.classSlot.set(name, this.nextSlot - 1);
+      if (!this.firstClassSlot.has(name)) this.firstClassSlot.set(name, this.nextSlot - 1);
       this.classSchema.set(name, schema);
       return this.newObj(r, name);
     }
@@ -2753,6 +2756,42 @@ var Archive = class {
     const layCs = this.classSlot.get("CLayer");
     if (layCs !== void 0 && isClassRef(this.data, at, layCs)) return true;
     return unmatchedClassRef && (tag & 32768) !== 0 && tag !== 65535;
+  }
+  // A tag may point at a line style right after its 21-byte tail: nothing
+  // (u16 0) for a plain tag, the style written out in full the first time
+  // one is used, or a back-ref to the style an earlier tag already wrote.
+  // Only those forms are consumed; anything else belongs to the caller.
+  //
+  // The slot-base probe numbers from 1<<20, so the file's own class-refs
+  // and back-refs cannot be looked up there: a class-ref is matched by its
+  // distance from the CLayer class-ref (the same in both numberings), and
+  // once a style has been read, any other plain object ref here is its
+  // back-ref.
+  readClayerLineStyle(r) {
+    if (r.pos + 2 > this.data.length) return;
+    const cls = "CCustomLineStyle";
+    const tag = r.peekU16();
+    const probing = this.walkBase >= 1 << 20;
+    if (tag === 65535) {
+      const at = r.pos + 4;
+      if (at + 2 + cls.length > this.data.length) return;
+      if ((this.data[at] | this.data[at + 1] << 8) !== cls.length) return;
+      if (!matchesAscii(this.data, at + 2, cls)) return;
+    } else if (tag & 32768) {
+      let cs = this.classSlot.get(cls);
+      const lay = this.classSlot.get("CLayer");
+      const lay0 = this.firstClassSlot.get("CLayer");
+      if (cs !== void 0 && lay !== void 0 && lay0 !== void 0) cs += lay - lay0;
+      if (cs !== (tag & 32767)) return;
+    } else if (tag === 0 || tag === 32767) {
+      return;
+    } else if (probing) {
+      if (!this.seenLineStyle) return;
+    } else {
+      const ent = this.slots.get(tag);
+      if (ent === void 0 || ent[0] !== "obj" || ent[1] !== cls) return;
+    }
+    this.readObject(r, cls);
   }
   // Colour CLayer ends in a 21-byte tail. Some v18 zero-material files
   // (custom tag listed first, then Layer0) write 12 zero bytes + u32 after
@@ -3103,9 +3142,27 @@ function readLayer(ar, r) {
   const rgba = r.raw(4);
   r.utf16();
   r.raw(ar.ver < FIRST_V4 ? 17 : 21);
+  ar.readClayerLineStyle(r);
   ar.skipClayerColourExt();
   ar.skipClayerParentRef(ar.currentObjSlot);
   return { k: "layer", name, hidden: mid.length ? mid[0] : 0, rgba: Array.from(rgba) };
+}
+var FIRST_SINGLE_PREAMBLE_LINE_STYLE = 20;
+// A tag's line style (SketchUp 2019 and 2020: "Dash", "Solid Basic", ...).
+// It is written inline where a tag first uses it, so it is an object in the
+// walk like any other and takes a store-map slot - which is why a file with
+// one could not be read at all before: every later reference was off by one.
+// SketchUp 2020 opens it with a single entity preamble, 2019 with two. Then
+// come the style's name, its dash pattern as text ("12.0, -6.0"), and three
+// doubles.
+function readCustomLineStyle(ar, r) {
+  earlyPreamble(ar, r);
+  if (ar.ver < FIRST_SINGLE_PREAMBLE_LINE_STYLE) earlyPreamble(ar, r);
+  const name = r.utf16();
+  const pattern = r.utf16();
+  const values = [r.f64(), r.f64(), r.f64()];
+  ar.seenLineStyle = true;
+  return { k: "linestyle", name, pattern, values };
 }
 function textureBlock(ar, r) {
   let s;
@@ -3604,6 +3661,7 @@ var READERS = {
   CLoop: readLoop,
   CFace: readFace,
   CLayer: readLayer,
+  CCustomLineStyle: readCustomLineStyle,
   CMaterial: readMaterial,
   CDib: readDib,
   CAttributeContainer: readAttrContainer,
